@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         UserRole
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  doctor       Doctor?
+  patient      Patient?
+}
+
+model Patient {
+  id           String        @id @default(cuid())
+  userId       String?       @unique
+  name         String
+  dateOfBirth  DateTime?
+  gender       String?
+  phone        String?
+  email        String?
+  address      String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  appointments Appointment[]
+  user         User?         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([name])
+  @@index([phone])
+  @@index([email])
+}
+
+model Doctor {
+  id           String        @id @default(cuid())
+  userId       String?       @unique
+  name         String
+  specialty    String?
+  phone        String?
+  email        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  appointments Appointment[]
+  user         User?         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([name])
+  @@index([specialty])
+}
+
+model Appointment {
+  id        String            @id @default(cuid())
+  patientId String
+  doctorId  String
+  startTime DateTime
+  endTime   DateTime
+  status    AppointmentStatus @default(SCHEDULED)
+  reason    String?
+  notes     String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  doctor    Doctor            @relation(fields: [doctorId], references: [id])
+  patient   Patient           @relation(fields: [patientId], references: [id])
+
+  @@index([doctorId, startTime, endTime])
+  @@index([patientId, startTime])
+  @@index([startTime])
+  @@index([status])
+}
+
+enum UserRole {
+  PATIENT
+  STAFF
+  DOCTOR
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
